@@ -32,7 +32,7 @@ export function toStr(d: Date) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
 }
 function parse(s: string) {
-  const [y, m, d] = s.split("-").map(Number);
+  const [y = 0, m = 1, d = 1] = s.split("-").map(Number);
   return new Date(y, m - 1, d);
 }
 export function daysBetween(a: string, b: string) {
@@ -57,7 +57,7 @@ export function presentSinceStart(w: Worker, absences: Absence[]) {
 
 /** Monthly payroll: salary computed on a fixed 30-day month. */
 export function monthReport(w: Worker, absences: Absence[], month: string) {
-  const [y, m] = month.split("-").map(Number);
+  const [y = 0, m = 1] = month.split("-").map(Number);
   const monthStart = `${month}-01`;
   const monthEnd = toStr(new Date(y, m, 0));
   if (w.startDate > monthEnd) return null;
