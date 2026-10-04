@@ -9,3 +9,4 @@
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
 - Payroll data is stored in browser localStorage via src/lib/payroll.ts; why: single-owner app, no backend yet.
+- Durability comes from a user-triggered JSON backup (downloadBackup/readBackup in src/lib/payroll.ts), not cloud; why: the user declined an account, so keep restore local, validated, and confirm before replacing live data.
