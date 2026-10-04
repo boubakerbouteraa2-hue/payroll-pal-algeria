@@ -1,7 +1,8 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   usePayroll, uid, todayStr, dzd, presentSinceStart, monthReport, absValue,
+  downloadBackup, readBackup, lastBackupAt,
   type Absence,
 } from "@/lib/payroll";
 
@@ -19,7 +20,7 @@ export const Route = createFileRoute("/")({
   component: App,
 });
 
-type Tab = "workers" | "absence" | "report";
+type Tab = "workers" | "absence" | "report" | "backup";
 
 function App() {
   const { data, setData, ready } = usePayroll();
@@ -45,15 +46,17 @@ function App() {
           <Workers data={data} setData={setData} />
         ) : tab === "absence" ? (
           <Absences data={data} setData={setData} />
+        ) : tab === "backup" ? (
+          <Backup data={data} setData={setData} />
         ) : (
           <Report data={data} defaultPrev={isFirst} />
         )}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 grid grid-cols-3 border-t bg-card print:hidden">
-        {([["workers", "العمال"], ["absence", "الغياب"], ["report", "التقرير"]] as const).map(([k, l]) => (
+      <nav className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t bg-card print:hidden">
+        {([["workers", "العمال"], ["absence", "الغياب"], ["report", "التقرير"], ["backup", "النسخ"]] as const).map(([k, l]) => (
           <button key={k} onClick={() => setTab(k)}
-            className={`py-4 font-bold ${tab === k ? "text-primary" : "text-muted-foreground"}`}>
+            className={`py-4 text-sm font-bold ${tab === k ? "text-primary" : "text-muted-foreground"}`}>
             {l}
           </button>
         ))}
@@ -209,6 +212,53 @@ function Report({ data, defaultPrev }: { data: P["data"]; defaultPrev: boolean }
         <div className="flex justify-between text-sm opacity-90"><span>مجموع الخصومات</span><span>{dzd(totalDed)}</span></div>
         <div className="mt-2 flex justify-between text-xl font-extrabold"><span>مجموع الأجور</span><span>{dzd(total)}</span></div>
       </div>
+    </div>
+  );
+}
+
+function Backup({ data, setData }: P) {
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [msg, setMsg] = useState("");
+  const [at, setAt] = useState<string | null>(null);
+
+  useEffect(() => setAt(lastBackupAt()), []);
+
+  const save = () => {
+    downloadBackup(data);
+    setAt(lastBackupAt());
+    setMsg("تم تنزيل النسخة ✓ احتفظ بالملف في مكان آمن.");
+  };
+
+  const restore = async (file?: File) => {
+    if (!file) return;
+    try {
+      const clean = await readBackup(file);
+      if (!confirm(`سيتم استرجاع ${clean.workers.length} عامل و${clean.absences.length} غياب وحذف الموجود حاليا. متابعة؟`)) return;
+      setData(clean);
+      setMsg("تم الاسترجاع ✓");
+    } catch (e) {
+      setMsg(e instanceof Error ? e.message : "تعذّرت قراءة الملف");
+    } finally {
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
+
+  return (
+    <div className="space-y-4">
+      <section className="card-box space-y-3">
+        <h2 className="text-lg font-bold">نسخة احتياطية</h2>
+        <p className="text-sm text-muted-foreground">
+          كل تغيير يُحفظ فورا على هذا الجهاز. نزّل نسخة احتياطية واحتفظ بها عندك، وتستطيع استرجاعها في أي وقت أو على جهاز آخر.
+        </p>
+        <button className="btn-primary w-full" onClick={save}>تنزيل نسخة احتياطية</button>
+        <input ref={fileRef} type="file" accept="application/json,.json" className="hidden"
+          onChange={(e) => restore(e.target.files?.[0])} />
+        <button className="btn-primary w-full" onClick={() => fileRef.current?.click()}>استرجاع من ملف</button>
+        <p className="text-center text-sm text-muted-foreground">
+          {at ? `آخر نسخة: ${new Date(at).toLocaleDateString("ar-DZ")}` : "لم تُنزّل أي نسخة بعد."}
+        </p>
+        {msg && <p className="text-center text-sm">{msg}</p>}
+      </section>
     </div>
   );
 }
