@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { Users, CalendarX2, FileText, Save, Plus, Lock, Printer } from "lucide-react";
 import {
   usePayroll, uid, todayStr, dzd, presentSinceStart, monthReport, absValue,
   downloadBackup, readBackup, lastBackupAt,
@@ -22,26 +23,64 @@ export const Route = createFileRoute("/")({
 
 type Tab = "workers" | "absence" | "report" | "backup";
 
+const monthKey = (d: Date) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+
 function App() {
   const { data, setData, ready } = usePayroll();
   const [tab, setTab] = useState<Tab>("workers");
   const isFirst = new Date().getDate() === 1;
+  const now = new Date();
+  const thisMonth = monthKey(now);
+
+  const stats = useMemo(() => {
+    let absDays = 0;
+    let net = 0;
+    for (const w of data.workers) {
+      const r = monthReport(w, data.absences, thisMonth);
+      if (r) {
+        absDays += r.absDays;
+        net += r.net;
+      }
+    }
+    return { workers: data.workers.length, absDays, net };
+  }, [data, thisMonth]);
 
   return (
     <div dir="rtl" className="min-h-screen bg-background pb-24">
-      <header className="farm-header px-5 pb-8 pt-10 text-primary-foreground print:hidden">
-        <p className="text-sm opacity-80">نظام الأجور</p>
-        <h1 className="text-3xl font-extrabold">مزرعة حميدي</h1>
+      <header className="px-5 pb-4 pt-8 print:hidden">
+        <div className="flex items-center justify-between text-sm text-muted-foreground">
+          <span className="flex items-center gap-2">
+            <span className="neon-dot" />
+            مزرعة حميدي · نظام الأجور
+          </span>
+          <span className="neon-num">{now.getMonth() + 1}/{now.getFullYear()}</span>
+        </div>
+        <h1 className="mt-3 text-4xl font-black tracking-tight">كشف أجور العمال</h1>
       </header>
+
+      <section className="grid grid-cols-3 gap-2 px-4 print:hidden">
+        <div className="stat-card">
+          <p className="text-xs text-muted-foreground">العمال</p>
+          <p className="neon-num mt-1 text-3xl font-black text-primary">{stats.workers}</p>
+        </div>
+        <div className="stat-card">
+          <p className="text-xs text-muted-foreground">الغياب</p>
+          <p className="neon-num mt-1 text-3xl font-black text-destructive">{stats.absDays}</p>
+        </div>
+        <div className="stat-card">
+          <p className="text-xs text-muted-foreground">الصافي</p>
+          <p className="neon-num mt-1 text-lg font-black leading-8">{dzd(stats.net)}</p>
+        </div>
+      </section>
 
       {isFirst && (
         <button onClick={() => setTab("report")}
-          className="mx-4 -mt-4 block w-[calc(100%-2rem)] rounded-xl bg-accent p-4 text-right text-accent-foreground shadow-lg print:hidden">
+          className="mx-4 mt-3 block w-[calc(100%-2rem)] rounded-xl border border-primary/40 bg-accent p-4 text-right text-accent-foreground print:hidden">
           📋 بداية شهر جديد — تقرير الشهر الماضي جاهز. اضغط للعرض.
         </button>
       )}
 
-      <main className="mx-auto max-w-3xl p-4">
+      <main className="mx-auto mt-4 max-w-3xl px-4">
         {!ready ? null : tab === "workers" ? (
           <Workers data={data} setData={setData} />
         ) : tab === "absence" ? (
@@ -53,10 +92,16 @@ function App() {
         )}
       </main>
 
-      <nav className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t bg-card print:hidden">
-        {([["workers", "العمال"], ["absence", "الغياب"], ["report", "التقرير"], ["backup", "النسخ"]] as const).map(([k, l]) => (
+      <nav className="fixed inset-x-0 bottom-0 grid grid-cols-4 border-t bg-card/95 backdrop-blur print:hidden">
+        {([
+          ["workers", "العمال", Users],
+          ["absence", "الغياب", CalendarX2],
+          ["report", "التقرير", FileText],
+          ["backup", "النسخ", Save],
+        ] as const).map(([k, l, Icon]) => (
           <button key={k} onClick={() => setTab(k)}
-            className={`py-4 text-sm font-bold ${tab === k ? "text-primary" : "text-muted-foreground"}`}>
+            className={`flex flex-col items-center gap-1 py-3 text-xs font-bold ${tab === k ? "text-primary" : "text-muted-foreground"}`}>
+            <Icon className="h-5 w-5" style={tab === k ? { filter: "drop-shadow(0 0 6px currentColor)" } : undefined} />
             {l}
           </button>
         ))}
@@ -81,7 +126,7 @@ function Workers({ data, setData }: P) {
   return (
     <div className="space-y-4">
       <section className="card-box space-y-3">
-        <h2 className="text-lg font-bold">إضافة عامل</h2>
+        <h2 className="flex items-center gap-2 text-lg font-bold"><Plus className="h-5 w-5 text-primary" /> إضافة عامل</h2>
         <input className="field" placeholder="الاسم" value={name} onChange={(e) => setName(e.target.value)} />
         <input className="field" type="number" placeholder="الأجر الشهري (د.ج)" value={salary} onChange={(e) => setSalary(e.target.value)} />
         <label className="block text-sm text-muted-foreground">تاريخ بداية العمل
@@ -103,11 +148,13 @@ function Workers({ data, setData }: P) {
             }}>حذف</button>
           </div>
           <div className="mt-3 rounded-lg bg-secondary p-3 text-secondary-foreground">
-            أيام الحضور من أول يوم عمل إلى اليوم: <b>{presentSinceStart(w, data.absences)}</b> يوم
+            أيام الحضور من أول يوم عمل إلى اليوم: <b className="neon-num text-primary">{presentSinceStart(w, data.absences)}</b> يوم
           </div>
         </div>
       ))}
-      {data.workers.length === 0 && <p className="text-center text-muted-foreground">لا يوجد عمال بعد.</p>}
+      {data.workers.length === 0 && (
+        <p className="card-box text-center text-muted-foreground">لا يوجد عمال بعد — أضف عاملا من الأعلى.</p>
+      )}
     </div>
   );
 }
@@ -134,7 +181,7 @@ function Absences({ data, setData }: P) {
   return (
     <div className="space-y-4">
       <section className="card-box space-y-3">
-        <h2 className="text-lg font-bold">تسجيل غياب</h2>
+        <h2 className="flex items-center gap-2 text-lg font-bold"><CalendarX2 className="h-5 w-5 text-destructive" /> تسجيل غياب</h2>
         <p className="text-sm text-muted-foreground">الحضور يُحتسب تلقائيا، سجّل الغياب فقط.</p>
         <select className="field" value={workerId} onChange={(e) => setWorkerId(e.target.value)}>
           <option value="">اختر العامل</option>
@@ -144,7 +191,7 @@ function Absences({ data, setData }: P) {
         <div className="grid grid-cols-2 gap-2">
           {([["full", "يوم كامل"], ["half", "نصف يوم"]] as const).map(([k, l]) => (
             <button key={k} onClick={() => setType(k)}
-              className={`rounded-lg border py-3 font-bold ${type === k ? "border-primary bg-primary text-primary-foreground" : ""}`}>{l}</button>
+              className={`rounded-lg border py-3 font-bold ${type === k ? "border-destructive bg-destructive text-destructive-foreground shadow-[0_0_16px_oklch(0.63_0.24_350/0.4)]" : ""}`}>{l}</button>
           ))}
         </div>
         <button className="btn-primary w-full" onClick={add}>تسجيل</button>
@@ -155,13 +202,16 @@ function Absences({ data, setData }: P) {
         <div key={a.id} className="card-box flex items-center justify-between">
           <div>
             <b>{nameOf(a.workerId)}</b>
-            <p className="text-sm text-muted-foreground">🔒 {a.date} · {a.type === "full" ? "يوم كامل" : "نصف يوم"}</p>
+            <p className="flex items-center gap-1 text-sm text-muted-foreground">
+              <Lock className="h-3.5 w-3.5" /> {a.date} · <span className="text-destructive">{a.type === "full" ? "يوم كامل" : "نصف يوم"}</span>
+            </p>
           </div>
           <button className="text-sm text-destructive" onClick={() => {
             if (confirm("إلغاء هذا الغياب؟")) setData((d) => ({ ...d, absences: d.absences.filter((x) => x.id !== a.id) }));
           }}>إلغاء</button>
         </div>
       ))}
+      {sorted.length === 0 && <p className="card-box text-center text-muted-foreground">السجل فارغ — لا غيابات مسجلة.</p>}
     </div>
   );
 }
@@ -169,7 +219,7 @@ function Absences({ data, setData }: P) {
 function Report({ data, defaultPrev }: { data: P["data"]; defaultPrev: boolean }) {
   const now = new Date();
   const ref = defaultPrev ? new Date(now.getFullYear(), now.getMonth() - 1, 1) : now;
-  const [month, setMonth] = useState(`${ref.getFullYear()}-${String(ref.getMonth() + 1).padStart(2, "0")}`);
+  const [month, setMonth] = useState(monthKey(ref));
 
   const rows = useMemo(
     () => data.workers.map((w) => ({ w, r: monthReport(w, data.absences, month) })).filter((x) => x.r),
@@ -182,20 +232,22 @@ function Report({ data, defaultPrev }: { data: P["data"]; defaultPrev: boolean }
     <div className="space-y-4">
       <div className="card-box flex items-center gap-3 print:hidden">
         <input className="field" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
-        <button className="btn-primary whitespace-nowrap" onClick={() => window.print()}>طباعة</button>
+        <button className="btn-primary flex items-center gap-2 whitespace-nowrap" onClick={() => window.print()}>
+          <Printer className="h-4 w-4" /> طباعة
+        </button>
       </div>
 
-      <h2 className="text-xl font-extrabold">تقرير أجور شهر {month} — مزرعة حميدي</h2>
+      <h2 className="text-xl font-black">تقرير أجور شهر {month} — مزرعة حميدي</h2>
       <p className="text-sm text-muted-foreground">الأجر الشهري محسوب على 30 يوما.</p>
 
       {rows.map(({ w, r }) => (
         <div key={w.id} className="card-box">
-          <div className="flex justify-between"><b className="text-lg">{w.name}</b><span>{dzd(w.salary)}</span></div>
+          <div className="flex justify-between"><b className="text-lg">{w.name}</b><span className="neon-num">{dzd(w.salary)}</span></div>
           <div className="mt-2 grid grid-cols-2 gap-y-1 text-sm">
-            <span className="text-muted-foreground">الأجر اليومي</span><span>{dzd(r!.daily)}</span>
-            <span className="text-muted-foreground">أيام الغياب</span><span>{r!.absDays}</span>
-            <span className="text-muted-foreground">الأيام المدفوعة</span><span>{r!.paidDays} / {r!.baseDays}</span>
-            <span className="text-muted-foreground">مقابل الغياب (الخصم)</span><span className="text-destructive">− {dzd(r!.deduction)}</span>
+            <span className="text-muted-foreground">الأجر اليومي</span><span className="neon-num">{dzd(r!.daily)}</span>
+            <span className="text-muted-foreground">أيام الغياب</span><span className="neon-num">{r!.absDays}</span>
+            <span className="text-muted-foreground">الأيام المدفوعة</span><span className="neon-num">{r!.paidDays} / {r!.baseDays}</span>
+            <span className="text-muted-foreground">مقابل الغياب (الخصم)</span><span className="neon-num text-destructive">− {dzd(r!.deduction)}</span>
           </div>
           {r!.list.length > 0 && (
             <p className="mt-2 text-xs text-muted-foreground">
@@ -203,14 +255,14 @@ function Report({ data, defaultPrev }: { data: P["data"]; defaultPrev: boolean }
             </p>
           )}
           <div className="mt-3 flex justify-between border-t pt-2 font-bold">
-            <span>الأجر الصافي</span><span className="text-primary">{dzd(r!.net)}</span>
+            <span>الأجر الصافي</span><span className="neon-num text-primary">{dzd(r!.net)}</span>
           </div>
         </div>
       ))}
 
-      <div className="farm-header rounded-xl p-5 text-primary-foreground">
-        <div className="flex justify-between text-sm opacity-90"><span>مجموع الخصومات</span><span>{dzd(totalDed)}</span></div>
-        <div className="mt-2 flex justify-between text-xl font-extrabold"><span>مجموع الأجور</span><span>{dzd(total)}</span></div>
+      <div className="card-box border-primary/40 p-5 shadow-[0_0_24px_oklch(0.86_0.23_152/0.15)]">
+        <div className="flex justify-between text-sm text-muted-foreground"><span>مجموع الخصومات</span><span className="neon-num text-destructive">{dzd(totalDed)}</span></div>
+        <div className="mt-2 flex justify-between text-xl font-black"><span>مجموع الأجور</span><span className="neon-num text-primary">{dzd(total)}</span></div>
       </div>
     </div>
   );
@@ -246,7 +298,7 @@ function Backup({ data, setData }: P) {
   return (
     <div className="space-y-4">
       <section className="card-box space-y-3">
-        <h2 className="text-lg font-bold">نسخة احتياطية</h2>
+        <h2 className="flex items-center gap-2 text-lg font-bold"><Save className="h-5 w-5 text-primary" /> نسخة احتياطية</h2>
         <p className="text-sm text-muted-foreground">
           كل تغيير يُحفظ فورا على هذا الجهاز. نزّل نسخة احتياطية واحتفظ بها عندك، وتستطيع استرجاعها في أي وقت أو على جهاز آخر.
         </p>
