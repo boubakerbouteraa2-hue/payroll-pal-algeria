@@ -8,3 +8,4 @@
 > Commits you push to the connected branch sync back to Lovable and show up in
 > the editor, so keep the branch in a working state.
 <!-- LOVABLE:END -->
+- Payroll data is stored in browser localStorage via src/lib/payroll.ts; why: single-owner app, no backend yet.

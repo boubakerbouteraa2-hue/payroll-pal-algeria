@@ -63,20 +63,20 @@
 
 :root {
   --radius: 0.625rem;
-  --background: oklch(1 0 0);
+  --background: oklch(0.97 0.015 95);
   --foreground: oklch(0.129 0.042 264.695);
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.129 0.042 264.695);
   --popover: oklch(1 0 0);
   --popover-foreground: oklch(0.129 0.042 264.695);
-  --primary: oklch(0.208 0.042 265.755);
-  --primary-foreground: oklch(0.984 0.003 247.858);
-  --secondary: oklch(0.968 0.007 247.896);
+  --primary: oklch(0.45 0.11 145);
+  --primary-foreground: oklch(0.98 0.01 100);
+  --secondary: oklch(0.93 0.04 140);
   --secondary-foreground: oklch(0.208 0.042 265.755);
   --muted: oklch(0.968 0.007 247.896);
   --muted-foreground: oklch(0.554 0.046 257.417);
-  --accent: oklch(0.968 0.007 247.896);
-  --accent-foreground: oklch(0.208 0.042 265.755);
+  --accent: oklch(0.85 0.14 85);
+  --accent-foreground: oklch(0.25 0.05 70);
   --destructive: oklch(0.577 0.245 27.325);
   --destructive-foreground: oklch(0.984 0.003 247.858);
   --border: oklch(0.929 0.013 255.508);
@@ -141,4 +141,12 @@
     background-color: var(--color-background);
     color: var(--color-foreground);
   }
+}
+
+body { font-family: "Tajawal", sans-serif; }
+@layer components {
+  .farm-header { background: linear-gradient(135deg, var(--primary), oklch(0.32 0.08 150)); }
+  .card-box { background: var(--card); border: 1px solid var(--border); border-radius: 1rem; padding: 1rem; box-shadow: 0 2px 8px oklch(0.3 0.05 140 / 0.06); }
+  .field { width: 100%; border: 1px solid var(--input); border-radius: 0.6rem; padding: 0.7rem; background: var(--background); }
+  .btn-primary { background: var(--primary); color: var(--primary-foreground); border-radius: 0.6rem; padding: 0.7rem 1rem; font-weight: 700; }
 }
