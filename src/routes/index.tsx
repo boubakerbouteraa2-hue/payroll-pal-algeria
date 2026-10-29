@@ -246,7 +246,7 @@ function Report({ data, defaultPrev }: { data: P["data"]; defaultPrev: boolean }
     <div className="space-y-4">
       <div className="card-box flex items-center gap-3 print:hidden">
         <input className="field" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
-        <button className="btn-primary flex items-center gap-2 whitespace-nowrap" onClick={() => window.print()}>
+        <button className="btn-primary flex items-center gap-2 whitespace-nowrap" onClick={print}>
           <Printer className="h-4 w-4" /> طباعة
         </button>
       </div>
