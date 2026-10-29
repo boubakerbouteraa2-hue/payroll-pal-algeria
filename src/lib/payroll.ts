@@ -98,31 +98,47 @@ export function printReportWindow(month: string, rows: PrintRow[], total: number
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
   const body = rows
     .map(
-      (r) => `<tr>
-        <td>${esc(r.name)}</td><td>${dzd(r.salary)}</td><td>${dzd(r.daily)}</td>
-        <td>${r.absDays}</td><td>${r.paidDays} / ${r.baseDays}</td>
-        <td>${dzd(r.deduction)}</td><td><b>${dzd(r.net)}</b></td>
-      </tr>`,
+      (r) => `<div class="card">
+        <div class="head"><span class="name">${esc(r.name)}</span><span class="muted">${dzd(r.salary)}</span></div>
+        <div class="row"><span>الأجر اليومي</span><span class="muted">${dzd(r.daily)}</span></div>
+        <div class="row"><span>أيام الغياب</span><span class="muted">${r.absDays}</span></div>
+        <div class="row"><span>الأيام المدفوعة</span><span class="muted">${r.paidDays} / ${r.baseDays}</span></div>
+        <div class="row"><span>مقابل الغياب (الخصم)</span><span class="pink">− ${dzd(r.deduction)}</span></div>
+        <div class="net"><span>الأجر الصافي</span><span class="green">${dzd(r.net)}</span></div>
+      </div>`,
     )
     .join("");
   const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1">
     <title>تقرير أجور شهر ${month} — مزرعة حميدي</title>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
-      body{font-family:sans-serif;color:#111;padding:16px}
-      h1{font-size:20px} p{color:#555}
-      table{width:100%;border-collapse:collapse;margin-top:12px}
-      th,td{border:1px solid #999;padding:6px 8px;text-align:right;font-size:13px}
-      th{background:#eee}
-      .tot{margin-top:14px;font-size:16px;font-weight:bold}
+      *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
+      body{font-family:Cairo,sans-serif;color:#222;padding:20px;max-width:720px;margin:auto;background:#fff}
+      h1{font-size:18px;color:#666;margin:0 0 4px}
+      .sub{font-size:12px;color:#555;margin:0 0 14px}
+      .card{border:1px solid #e3e6e8;border-radius:12px;padding:12px 14px;margin-bottom:12px;box-shadow:0 3px 10px rgba(0,0,0,.12);break-inside:avoid}
+      .head,.row,.net{display:flex;justify-content:space-between;align-items:center}
+      .name{font-weight:800;font-size:16px;color:#555}
+      .row{font-size:12.5px;padding:3px 0}
+      .row span:last-child{min-width:35%;text-align:right}
+      .muted{color:#888}
+      .pink{color:#c2187a}
+      .green{color:#10c463;font-weight:800;text-shadow:0 0 6px rgba(16,196,99,.45)}
+      .net{border-top:1px solid #e6efe9;margin-top:8px;padding-top:8px;color:#666}
+      .tot{border:1px solid #9fe8c2;border-radius:12px;padding:12px 16px;break-inside:avoid}
+      .tot .row{font-size:13px}
+      .tot .big{font-size:17px;font-weight:800;color:#555}
+      .tot .big .green{font-size:18px}
     </style></head><body>
     <h1>تقرير أجور شهر ${month} — مزرعة حميدي</h1>
-    <p>الأجر الشهري محسوب على 30 يوما.</p>
-    <table><thead><tr>
-      <th>العامل</th><th>الأجر الشهري</th><th>الأجر اليومي</th><th>أيام الغياب</th>
-      <th>الأيام المدفوعة</th><th>الخصم</th><th>الصافي</th>
-    </tr></thead><tbody>${body}</tbody></table>
-    <p class="tot">مجموع الخصومات: ${dzd(totalDed)} — مجموع الأجور: ${dzd(total)}</p>
-    <script>window.onload=()=>{window.print();}<\/script>
+    <p class="sub">الأجر الشهري محسوب على 30 يوما.</p>
+    ${body}
+    <div class="tot">
+      <div class="row"><span>مجموع الخصومات</span><span class="pink">${dzd(totalDed)}</span></div>
+      <div class="row big"><span>مجموع الأجور</span><span class="green">${dzd(total)}</span></div>
+    </div>
+    <script>window.onload=()=>{setTimeout(()=>window.print(),400);}<\/script>
     </body></html>`;
   // Installed app (standalone): print and blank popups are blocked, so hand the
   // report to the phone as a file (share sheet → print / PDF / WhatsApp, or download).
