@@ -124,6 +124,24 @@ export function printReportWindow(month: string, rows: PrintRow[], total: number
     <p class="tot">مجموع الخصومات: ${dzd(totalDed)} — مجموع الأجور: ${dzd(total)}</p>
     <script>window.onload=()=>{window.print();}<\/script>
     </body></html>`;
+  // Installed app (standalone): print and blank popups are blocked, so hand the
+  // report to the phone as a file (share sheet → print / PDF / WhatsApp, or download).
+  if (window.matchMedia("(display-mode: standalone)").matches) {
+    const name = `تقرير-${month}-مزرعة-حميدي.html`;
+    const file = new File([html], name, { type: "text/html" });
+    const nav = navigator as Navigator & { canShare?: (d: { files: File[] }) => boolean };
+    if (nav.canShare?.({ files: [file] })) {
+      nav.share({ files: [file], title: name }).catch(() => {});
+      return true;
+    }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = name;
+    a.click();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    return true;
+  }
   const w = window.open("", "_blank");
   if (!w) return false;
   w.document.write(html);
