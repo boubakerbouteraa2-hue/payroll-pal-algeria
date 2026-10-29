@@ -72,6 +72,65 @@ export function monthReport(w: Worker, absences: Absence[], month: string) {
   return { daily, baseDays, absDays, paidDays, deduction, net: paidDays * daily, list };
 }
 
+/** ---------- printing ---------- */
+
+/** True on phones / installed app where window.print() is often a no-op. */
+export function isMobilePrint() {
+  return (
+    /Android|iPhone|iPad|iPod/i.test(navigator.userAgent) ||
+    window.matchMedia("(display-mode: standalone)").matches
+  );
+}
+
+export type PrintRow = {
+  name: string;
+  salary: number;
+  daily: number;
+  absDays: number;
+  paidDays: number;
+  baseDays: number;
+  deduction: number;
+  net: number;
+};
+
+/** Opens a ready-to-print report in a new window (for phones where window.print fails). */
+export function printReportWindow(month: string, rows: PrintRow[], total: number, totalDed: number) {
+  const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  const body = rows
+    .map(
+      (r) => `<tr>
+        <td>${esc(r.name)}</td><td>${dzd(r.salary)}</td><td>${dzd(r.daily)}</td>
+        <td>${r.absDays}</td><td>${r.paidDays} / ${r.baseDays}</td>
+        <td>${dzd(r.deduction)}</td><td><b>${dzd(r.net)}</b></td>
+      </tr>`,
+    )
+    .join("");
+  const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
+    <title>تقرير أجور شهر ${month} — مزرعة حميدي</title>
+    <style>
+      body{font-family:sans-serif;color:#111;padding:16px}
+      h1{font-size:20px} p{color:#555}
+      table{width:100%;border-collapse:collapse;margin-top:12px}
+      th,td{border:1px solid #999;padding:6px 8px;text-align:right;font-size:13px}
+      th{background:#eee}
+      .tot{margin-top:14px;font-size:16px;font-weight:bold}
+    </style></head><body>
+    <h1>تقرير أجور شهر ${month} — مزرعة حميدي</h1>
+    <p>الأجر الشهري محسوب على 30 يوما.</p>
+    <table><thead><tr>
+      <th>العامل</th><th>الأجر الشهري</th><th>الأجر اليومي</th><th>أيام الغياب</th>
+      <th>الأيام المدفوعة</th><th>الخصم</th><th>الصافي</th>
+    </tr></thead><tbody>${body}</tbody></table>
+    <p class="tot">مجموع الخصومات: ${dzd(totalDed)} — مجموع الأجور: ${dzd(total)}</p>
+    <script>window.onload=()=>{window.print();}<\/script>
+    </body></html>`;
+  const w = window.open("", "_blank");
+  if (!w) return false;
+  w.document.write(html);
+  w.document.close();
+  return true;
+}
+
 /** ---------- backup / restore ---------- */
 const BACKUP_KEY = "hamidi-farm-payroll-backup-at";
 
