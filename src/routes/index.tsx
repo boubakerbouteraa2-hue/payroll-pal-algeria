@@ -3,7 +3,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { Users, CalendarX2, FileText, Save, Plus, Lock, Printer } from "lucide-react";
 import {
   usePayroll, uid, todayStr, dzd, presentSinceStart, monthReport, absValue,
-  downloadBackup, readBackup, lastBackupAt,
+  downloadBackup, readBackup, lastBackupAt, isMobilePrint, printReportWindow,
   type Absence,
 } from "@/lib/payroll";
 
@@ -228,11 +228,25 @@ function Report({ data, defaultPrev }: { data: P["data"]; defaultPrev: boolean }
   const total = rows.reduce((s, x) => s + x.r!.net, 0);
   const totalDed = rows.reduce((s, x) => s + x.r!.deduction, 0);
 
+  const print = () => {
+    if (!isMobilePrint()) return window.print();
+    const ok = printReportWindow(
+      month,
+      rows.map(({ w, r }) => ({
+        name: w.name, salary: w.salary, daily: r!.daily, absDays: r!.absDays,
+        paidDays: r!.paidDays, baseDays: r!.baseDays, deduction: r!.deduction, net: r!.net,
+      })),
+      total,
+      totalDed,
+    );
+    if (!ok) window.print();
+  };
+
   return (
     <div className="space-y-4">
       <div className="card-box flex items-center gap-3 print:hidden">
         <input className="field" type="month" value={month} onChange={(e) => setMonth(e.target.value)} />
-        <button className="btn-primary flex items-center gap-2 whitespace-nowrap" onClick={() => window.print()}>
+        <button className="btn-primary flex items-center gap-2 whitespace-nowrap" onClick={print}>
           <Printer className="h-4 w-4" /> طباعة
         </button>
       </div>
