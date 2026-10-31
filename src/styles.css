@@ -155,4 +155,30 @@ body { font-family: "Cairo", "Tajawal", sans-serif; }
     padding: 0.9rem 0.5rem;
     text-align: center;
   }
+  .pay-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed;
+    text-align: center;
+    font-size: 12px;
+  }
+  .pay-table th,
+  .pay-table td {
+    border: 1px solid var(--border);
+    padding: 0.5rem 0.2rem;
+    word-break: break-word;
+    vertical-align: middle;
+  }
+  .pay-table th {
+    background: var(--secondary);
+    color: var(--secondary-foreground);
+    font-weight: 800;
+  }
+  .pay-table td {
+    color: var(--foreground);
+  }
+  .pay-table tr:last-child td {
+    border-bottom: 1px solid var(--border);
+  }
+
 }

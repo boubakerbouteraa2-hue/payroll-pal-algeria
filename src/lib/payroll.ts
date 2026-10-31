@@ -96,16 +96,19 @@ export type PrintRow = {
 /** Opens a ready-to-print report in a new window (for phones where window.print fails). */
 export function printReportWindow(month: string, rows: PrintRow[], total: number, totalDed: number) {
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => `&#${c.charCodeAt(0)};`);
+  const head = ["العامل", "الأجر الشهري", "الأجر اليومي", "أيام الغياب", "الأيام المدفوعة", "الخصم"]
+    .map((h) => `<th>${h}</th>`)
+    .join("");
   const body = rows
     .map(
-      (r) => `<div class="card">
-        <div class="head"><span class="name">${esc(r.name)}</span><span class="muted">${dzd(r.salary)}</span></div>
-        <div class="row"><span>الأجر اليومي</span><span class="muted">${dzd(r.daily)}</span></div>
-        <div class="row"><span>أيام الغياب</span><span class="muted">${r.absDays}</span></div>
-        <div class="row"><span>الأيام المدفوعة</span><span class="muted">${r.paidDays} / ${r.baseDays}</span></div>
-        <div class="row"><span>مقابل الغياب (الخصم)</span><span class="pink">− ${dzd(r.deduction)}</span></div>
-        <div class="net"><span>الأجر الصافي</span><span class="green">${dzd(r.net)}</span></div>
-      </div>`,
+      (r) => `<tr>
+        <td class="name">${esc(r.name)}</td>
+        <td>${dzd(r.salary)}</td>
+        <td>${dzd(r.daily)}</td>
+        <td>${r.absDays}</td>
+        <td>${r.paidDays} / ${r.baseDays}</td>
+        <td class="ded">${dzd(r.deduction)}</td>
+      </tr>`,
     )
     .join("");
   const html = `<!doctype html><html dir="rtl" lang="ar"><head><meta charset="utf-8">
@@ -114,30 +117,29 @@ export function printReportWindow(month: string, rows: PrintRow[], total: number
     <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;800&display=swap" rel="stylesheet">
     <style>
       *{-webkit-print-color-adjust:exact;print-color-adjust:exact;box-sizing:border-box}
-      body{font-family:Cairo,sans-serif;color:#222;padding:20px;max-width:720px;margin:auto;background:#fff}
-      h1{font-size:18px;color:#666;margin:0 0 4px}
-      .sub{font-size:12px;color:#555;margin:0 0 14px}
-      .card{border:1px solid #e3e6e8;border-radius:12px;padding:12px 14px;margin-bottom:12px;box-shadow:0 3px 10px rgba(0,0,0,.12);break-inside:avoid}
-      .head,.row,.net{display:flex;justify-content:space-between;align-items:center}
-      .name{font-weight:800;font-size:16px;color:#555}
-      .row{font-size:12.5px;padding:3px 0}
-      .row span:last-child{min-width:35%;text-align:right}
-      .muted{color:#888}
-      .pink{color:#c2187a}
-      .green{color:#10c463;font-weight:800;text-shadow:0 0 6px rgba(16,196,99,.45)}
-      .net{border-top:1px solid #e6efe9;margin-top:8px;padding-top:8px;color:#666}
-      .tot{border:1px solid #9fe8c2;border-radius:12px;padding:12px 16px;break-inside:avoid}
-      .tot .row{font-size:13px}
-      .tot .big{font-size:17px;font-weight:800;color:#555}
-      .tot .big .green{font-size:18px}
+      body{font-family:Cairo,sans-serif;color:#111;padding:16px;max-width:820px;margin:auto;background:#fff}
+      h1{font-size:22px;font-weight:800;text-align:center;margin:0 0 6px}
+      .sub{font-size:13px;color:#555;text-align:center;margin:0 0 16px}
+      table{width:100%;border-collapse:collapse;table-layout:fixed}
+      th,td{border:1px solid #9a9a9a;padding:7px 4px;text-align:center;font-size:13px;word-break:break-word}
+      th{background:#e9e9e9;font-weight:800}
+      td.name{font-weight:700}
+      td.ded{color:#b00020;font-weight:700}
+      tr.tot td{font-weight:800;font-size:14px;background:#f3f3f3}
+      tr.tot td.ded{color:#b00020}
+      tr.grand td{font-size:15px;font-weight:800}
+      @media print{@page{size:A4;margin:12mm}table{font-size:12px}th,td{padding:5px 3px}}
     </style></head><body>
     <h1>تقرير أجور شهر ${month} — مزرعة حميدي</h1>
     <p class="sub">الأجر الشهري محسوب على 30 يوما.</p>
-    ${body}
-    <div class="tot">
-      <div class="row"><span>مجموع الخصومات</span><span class="pink">${dzd(totalDed)}</span></div>
-      <div class="row big"><span>مجموع الأجور</span><span class="green">${dzd(total)}</span></div>
-    </div>
+    <table>
+      <thead><tr>${head}</tr></thead>
+      <tbody>
+        ${body}
+        <tr class="tot"><td colspan="5">مجموع الخصومات</td><td class="ded">${dzd(totalDed)}</td></tr>
+        <tr class="tot grand"><td colspan="5">مجموع الأجور</td><td>${dzd(total)}</td></tr>
+      </tbody>
+    </table>
     <script>window.onload=()=>{setTimeout(()=>window.print(),400);}<\/script>
     </body></html>`;
   // Installed app (standalone): print and blank popups are blocked, so hand the
