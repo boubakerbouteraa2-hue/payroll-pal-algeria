@@ -2,10 +2,11 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Users, CalendarX2, FileText, Save, Plus, Lock, Printer } from "lucide-react";
 import {
-  usePayroll, uid, todayStr, dzd, presentSinceStart, monthReport, absValue,
+  usePayroll, uid, todayStr, dzd, presentSinceStart, monthReport,
   downloadBackup, readBackup, lastBackupAt, isMobilePrint, printReportWindow,
   type Absence,
 } from "@/lib/payroll";
+
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -251,36 +252,47 @@ function Report({ data, defaultPrev }: { data: P["data"]; defaultPrev: boolean }
         </button>
       </div>
 
-      <h2 className="text-xl font-black">تقرير أجور شهر {month} — مزرعة حميدي</h2>
-      <p className="text-sm text-muted-foreground">الأجر الشهري محسوب على 30 يوما.</p>
+      <h2 className="text-center text-xl font-black">تقرير أجور شهر {month} — مزرعة حميدي</h2>
+      <p className="text-center text-sm text-muted-foreground">الأجر الشهري محسوب على 30 يوما.</p>
 
-      {rows.map(({ w, r }) => (
-        <div key={w.id} className="card-box">
-          <div className="flex justify-between"><b className="text-lg">{w.name}</b><span className="neon-num">{dzd(w.salary)}</span></div>
-          <div className="mt-2 grid grid-cols-2 gap-y-1 text-sm">
-            <span className="text-muted-foreground">الأجر اليومي</span><span className="neon-num">{dzd(r!.daily)}</span>
-            <span className="text-muted-foreground">أيام الغياب</span><span className="neon-num">{r!.absDays}</span>
-            <span className="text-muted-foreground">الأيام المدفوعة</span><span className="neon-num">{r!.paidDays} / {r!.baseDays}</span>
-            <span className="text-muted-foreground">مقابل الغياب (الخصم)</span><span className="neon-num text-destructive">− {dzd(r!.deduction)}</span>
-          </div>
-          {r!.list.length > 0 && (
-            <p className="mt-2 text-xs text-muted-foreground">
-              {r!.list.map((a) => `${a.date.slice(8)} (${absValue(a) === 1 ? "يوم" : "½"})`).join("، ")}
-            </p>
-          )}
-          <div className="mt-3 flex justify-between border-t pt-2 font-bold">
-            <span>الأجر الصافي</span><span className="neon-num text-primary">{dzd(r!.net)}</span>
-          </div>
-        </div>
-      ))}
-
-      <div className="card-box border-primary/40 p-5 shadow-[0_0_24px_oklch(0.86_0.23_152/0.15)]">
-        <div className="flex justify-between text-sm text-muted-foreground"><span>مجموع الخصومات</span><span className="neon-num text-destructive">{dzd(totalDed)}</span></div>
-        <div className="mt-2 flex justify-between text-xl font-black"><span>مجموع الأجور</span><span className="neon-num text-primary">{dzd(total)}</span></div>
+      <div className="card-box overflow-x-auto p-2">
+        <table className="pay-table">
+          <thead>
+            <tr>
+              <th>العامل</th>
+              <th>الأجر الشهري</th>
+              <th>الأجر اليومي</th>
+              <th>أيام الغياب</th>
+              <th>الأيام المدفوعة</th>
+              <th>الخصم</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map(({ w, r }) => (
+              <tr key={w.id}>
+                <td className="font-bold">{w.name}</td>
+                <td className="neon-num">{dzd(w.salary)}</td>
+                <td className="neon-num">{dzd(r!.daily)}</td>
+                <td className="neon-num">{r!.absDays}</td>
+                <td className="neon-num">{r!.paidDays} / {r!.baseDays}</td>
+                <td className="neon-num text-destructive">{dzd(r!.deduction)}</td>
+              </tr>
+            ))}
+            <tr className="bg-secondary font-bold">
+              <td colSpan={5}>مجموع الخصومات</td>
+              <td className="neon-num text-destructive">{dzd(totalDed)}</td>
+            </tr>
+            <tr className="bg-secondary font-black">
+              <td colSpan={5}>مجموع الأجور</td>
+              <td className="neon-num text-primary">{dzd(total)}</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   );
 }
+
 
 function Backup({ data, setData }: P) {
   const fileRef = useRef<HTMLInputElement>(null);
